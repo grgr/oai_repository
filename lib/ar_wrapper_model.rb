@@ -81,7 +81,7 @@ class ARWrapperModel < OAI::Provider::Model
     # TODO: optimise somehow
     # This scans all records :-(
     records.each do |record|
-      obj = Object.const_get(record["type"]).find(record["id"])
+      obj = Object.const_get(record.send("type")).find(record["id"])
       return obj if obj.oai_dc_identifier.eql?(id)
     end
     raise OAI::IdException.new
@@ -127,18 +127,14 @@ class ARWrapperModel < OAI::Provider::Model
 
 
     record_sql = @models.map do |m|
-      if m.method_defined? :published
-        if m.column_names.include? "published"
-          res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db)).where(:published => true)
-        else
-          res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db)).select{|p| p if p.published}
-        end
+      if m.column_names.include? "workflow_state"
+        res = m.where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db)).where(workflow_state: 'public')
       else
-        res = m.select("id, '#{m.name}' as type, #{timestamp_field}").where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db))
+        res = m.where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_s(:db), to.to_s(:db))
       end
 
       if !(res.empty? or set.nil?)
-        res.select!{|record| record.sets.map(&:spec).include?(set)}
+        res = res.select{|record| record.sets.map(&:spec).include?(set)}
       end
       union += res unless res.empty?
     end
@@ -150,7 +146,7 @@ class ARWrapperModel < OAI::Provider::Model
 
   def get_record_objects(records)
     records.map do |record|
-      Object.const_get(record["type"]).find(record["id"])
+      Object.const_get(record.send("type")).find(record["id"])
     end
   end
 
