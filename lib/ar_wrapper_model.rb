@@ -157,7 +157,7 @@ class ARWrapperModel < OAI::Provider::Model
   def first_record_date(order)
     record = nil
     @models.each do |model|
-      r = model.first(:order => "#{@timestamp_field} #{order.to_s}")
+      r = model.order("#{@timestamp_field} #{order.to_s}").first
       next if r.nil?
 
       if record.nil?
