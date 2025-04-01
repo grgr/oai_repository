@@ -4,8 +4,8 @@ module OaiRepository
 
     def show
 
-      options = params.delete_if { |k,v| %w{controller action}.include?(k) }
-      response = get_provider.process_request(options)
+      options = oai_params.delete_if { |k,v| %w{controller action}.include?(k) }
+      response = get_provider.process_request(options.to_h)
       render :xml => response
       
     end
@@ -13,6 +13,12 @@ module OaiRepository
     def get_provider
       @provider ||= OAIProvider::provider.new
     end
+
+    private
+
+    def oai_params        
+      params.permit(:verb, :identifier, :metadataPrefix, :set, :from, :until, :resumptionToken)        
+    end        
 
   end
 end
