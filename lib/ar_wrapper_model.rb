@@ -127,7 +127,17 @@ class ARWrapperModel < OAI::Provider::Model
 
 
     record_sql = @models.map do |m|
-      if m.column_names.include? "workflow_state"
+      # interviews
+      if m.column_names.include? "collection_id"
+        res = m.joins(:project, :collection).
+          where("#{m.table_name}.#{@timestamp_field} >= ? and #{m.table_name}.#{@timestamp_field} < ?", from.to_formatted_s(:db), to.to_formatted_s(:db)).
+          where(projects: {workflow_state: 'public'}, collections: {workflow_state: 'public'}, interviews: {workflow_state: 'public'})
+      # collections
+      elsif m.column_names.include? "project_id"
+        res = m.joins(:project).
+          where("#{m.table_name}.#{@timestamp_field} >= ? and #{m.table_name}.#{@timestamp_field} < ?", from.to_formatted_s(:db), to.to_formatted_s(:db)).
+          where(projects: {workflow_state: 'public'}, collections: {workflow_state: 'public'})
+      elsif m.column_names.include? "workflow_state"
         res = m.where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_formatted_s(:db), to.to_formatted_s(:db)).where(workflow_state: 'public')
       else
         res = m.where("#{timestamp_field} >= ? and #{timestamp_field} < ?", from.to_formatted_s(:db), to.to_formatted_s(:db))
